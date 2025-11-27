@@ -3,6 +3,8 @@ import 'dotenv/config';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { setCookie, getCookie } from 'hono/cookie';
+import fs from 'fs';
+import path from 'path';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from './db/index.js';
@@ -11,6 +13,27 @@ import { eq, sql, desc } from 'drizzle-orm';
 
 const app = new Hono();
 const SECRET = process.env.JWT_SECRET;
+
+// Serve HTML pages
+app.get('/login/', (c) => {
+    const html = fs.readFileSync(path.join(process.cwd(), 'public/login/index.html'), 'utf-8');
+    return c.html(html);
+});
+
+app.get('/register/', (c) => {
+    const html = fs.readFileSync(path.join(process.cwd(), 'public/register/index.html'), 'utf-8');
+    return c.html(html);
+});
+
+app.get('/logout/', (c) => {
+    const html = fs.readFileSync(path.join(process.cwd(), 'public/logout/index.html'), 'utf-8');
+    return c.html(html);
+});
+
+app.get('/todos/', (c) => {
+    const html = fs.readFileSync(path.join(process.cwd(), 'public/todos/index.html'), 'utf-8');
+    return c.html(html);
+});
 
 // ROUTE UTAMA (AGAR TIDAK 404)
 app.get('/', (c) => {
@@ -75,7 +98,7 @@ const authMiddleware = async (c, next) => {
     const token = getCookie(c, 'token');
     if (!token) return c.json({ success: false, message: 'Unauthorized' }, 401);
     try {
-        const user = jwt.verifyTAMBAH TRANSAKSI(token, SECRET);
+        const user = jwt.verify(token, SECRET);
         c.set('user', user); // Menyimpan data user di context Hono
         await next();
     } catch (error) {

@@ -1,0 +1,39 @@
+<!DOCTYPE html><html><body><h1>Register Page</h1></body></html><!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+</head>
+<body>
+<h1>Register</h1>
+
+<form id="regForm">
+    <input id="username" placeholder="Username" required><br><br>
+    <input id="password" placeholder="Password" type="password" required><br><br>
+    <button>Daftar</button>
+</form>
+
+<script>
+document.getElementById("regForm").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+
+    const username = username.value;
+    const password = password.value;
+
+    const res = await fetch("/api/register", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+        alert("Register berhasil!");
+        window.location.href="/login";
+    } else {
+        alert("Gagal register!");
+    }
+});
+</script>
+</body>
+</html>

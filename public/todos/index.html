@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Todos</title>
+</head>
+<body>
+<h1>Daftar Todos</h1>
+
+<input id="todoText" placeholder="Tambah todo baru">
+<button onclick="addTodo()">Tambah</button>
+
+<ul id="todoList"></ul>
+
+<br>
+<a href="/logout">Logout</a>
+
+<script>
+async function loadTodos(){
+    const res = await fetch("/api/todos");
+    const data = await res.json();
+    const list = document.getElementById("todoList");
+    list.innerHTML = "";
+
+    data.data.forEach(t => {
+        list.innerHTML += `<li>${t.text}</li>`;
+    });
+}
+
+async function addTodo(){
+    const text = todoText.value;
+    await fetch("/api/todos", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ text })
+    });
+
+    loadTodos();
+}
+
+loadTodos();
+</script>
+</body>
+</html>
