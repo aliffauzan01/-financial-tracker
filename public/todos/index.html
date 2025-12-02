@@ -6,37 +6,109 @@
 <body>
 <h1>Daftar Todos</h1>
 
-<input id="todoText" placeholder="Tambah todo baru">
-<button onclick="addTodo()">Tambah</button>
+<div>
+    <input id="todoText" placeholder="Tambah todo baru">
+    <button onclick="addTodo()">Tambah</button>
+</div>
 
 <ul id="todoList"></ul>
 
+<p id="message"></p>
+
 <br>
-<a href="/logout">Logout</a>
+<button onclick="logout()">Logout</button>
 
 <script>
+// Cek login status
+async function checkAuth() {
+    try {
+        const res = await fetch("/api/me", {
+            credentials: 'include'
+        });
+        
+        if (!res.ok) {
+            window.location.href = "/login";
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        window.location.href = "/login";
+        return false;
+    }
+}
+
+// Load todos
 async function loadTodos(){
-    const res = await fetch("/api/todos");
-    const data = await res.json();
-    const list = document.getElementById("todoList");
-    list.innerHTML = "";
-
-    data.data.forEach(t => {
-        list.innerHTML += `<li>${t.text}</li>`;
-    });
+    const auth = await checkAuth();
+    if (!auth) return;
+    
+    try {
+        const res = await fetch("/api/todos", {
+            credentials: 'include'
+        });
+        
+        const data = await res.json();
+        const list = document.getElementById("todoList");
+        
+        if (data.success) {
+            list.innerHTML = "";
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(todo => {
+                    list.innerHTML += `<li>${todo.text}</li>`;
+                });
+            } else {
+                list.innerHTML = "<li>Belum ada todos</li>";
+            }
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    }
 }
 
+// Add todo
 async function addTodo(){
-    const text = todoText.value;
-    await fetch("/api/todos", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ text })
-    });
-
-    loadTodos();
+    const text = document.getElementById("todoText").value;
+    if (!text.trim()) {
+        alert("Todo tidak boleh kosong");
+        return;
+    }
+    
+    try {
+        const res = await fetch("/api/todos", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            credentials: 'include',
+            body: JSON.stringify({ text })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            document.getElementById("todoText").value = "";
+            loadTodos();
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    }
 }
 
+// Logout
+async function logout() {
+    try {
+        await fetch("/api/logout", {
+            method: "POST",
+            credentials: 'include'
+        });
+        window.location.href = "/login";
+    } catch (error) {
+        window.location.href = "/login";
+    }
+}
+
+// Load todos on page load
 loadTodos();
 </script>
 </body>
