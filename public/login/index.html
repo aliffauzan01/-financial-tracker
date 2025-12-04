@@ -1,56 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
- 
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login</title>
-</head>
- 
-<body>
-  <div class="container">
-    <h1>Login Aplikasi Keuangan</h1>
-    <div id="message"></div>
-    <form id="loginForm">
-      <input type="text" id="username" placeholder="Username" required />
-      <br><br>
-      <input type="password" id="password" placeholder="Password" required />
-      <br><br>
-      <button type="submit">Login</button>
-    </form>
-    <p>Belum punya akun? <a href="/register/">Daftar di sini</a></p>
-  </div>
- 
-  <script>
-    const form = document.getElementById('loginForm');
-    const messageDiv = document.getElementById('message');
- 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      messageDiv.textContent = '';
-      messageDiv.style.color = 'red';
- 
-      try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
- 
-        const result = await response.json();
- 
-        if (response.ok && result.success) {
-          // Login berhasil, cookie sudah terpasang
-          window.location.href = '/dashboard/';
-        } else {
-          messageDiv.textContent = result.message || 'Login gagal!';
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Login & Register</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-      } catch (error) {
-        messageDiv.textContent = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
-      }
-    });
-  </script>
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .features {
+            margin-top: 40px;
+            text-align: left;
+        }
+        
+        .features h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .features ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        
+        .features li {
+            padding: 8px 0;
+            color: #666;
+            position: relative;
+        }
+        
+        .features li:before {
+            content: "✓";
+            color: #667eea;
+            font-weight: bold;
+            position: absolute;
+            left: -20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Selamat Datang</h1>
+        <p>Sistem Login dan Registrasi dengan JavaScript, Node.js, dan MySQL</p>
+        
+        <div class="buttons">
+            <a href="/login" class="btn btn-primary">Login</a>
+            <a href="/register" class="btn btn-secondary">Register</a>
+        </div>
+        
+        <div class="features">
+            <h2>Fitur Sistem:</h2>
+            <ul>
+                <li>Registrasi pengguna baru</li>
+                <li>Login dengan validasi</li>
+                <li>Keamanan password dengan bcrypt</li>
+                <li>Session management dengan JWT</li>
+                <li>Responsive design</li>
+                <li>Notifikasi real-time</li>
+            </ul>
+        </div>
+    </div>
 </body>
 </html>

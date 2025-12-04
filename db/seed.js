@@ -1,40 +1,34 @@
+// db/seed.js
 import 'dotenv/config';
 import { db } from './index.js';
 import bcrypt from 'bcryptjs';
-import { todos, users } from './schema.js';
+import { transactions, users } from './schema.js';
  
 async function seed() {
   console.log('Seeding database...');
- 
-  // Hapus data lama (opsional)
-  await db.delete(todos);
+  await db.delete(transactions);
   await db.delete(users);
  
-  // Buat user dummy dengan password yang sudah di-hash
- const plainPassword = 'password123';
-  const hashedPassword = await bcrypt.hash(plainPassword, 10); // Hash password
+  const hashedPassword = await bcrypt.hash('password123', 10);
  
-  // Buat user dummy
   const user1 = await db
     .insert(users)
     .values({
-      username: 'andi',
-      // Di aplikasi nyata, password ini harus di-hash!
-      // Tapi untuk seed, kita bisa gunakan teks biasa.
-      password: hashedPassword, // Simpan password yang sudah di-hash
+      username: 'tester',
+      password: hashedPassword,
     })
     .returning();
  
-  // Buat todo dummy untuk user1
-  await db.insert(todos).values([
-    { note: 'Belajar Drizzle ORM', userId: user1[0].id },
-    { note: 'Membuat API dengan Hono', userId: user1[0].id },
+  await db.insert(transactions).values([
+    { nominal: 5000000.00, transactionDate: '2025-10-01', status: 'income', description: 'Gaji Bulanan', userId: user1[0].id },
+    { nominal: 500000.00, transactionDate: '2025-10-05', status: 'outcome', description: 'Bayar Listrik', userId: user1[0].id },
   ]);
-  console.log(' Seeding completed!');
+ 
+  console.log('✅ Seeding completed!');
   process.exit(0);
 }
-
+ 
 seed().catch((err) => {
-  console.error(' Seeding failed:', err);
+  console.error('❌ Seeding failed:', err);
   process.exit(1);
 });
