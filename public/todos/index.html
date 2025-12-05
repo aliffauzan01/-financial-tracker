@@ -1,192 +1,45 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Todos</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        #debug { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .success { color: green; }
-        .error { color: red; }
-    </style>
-</head>
 <body>
-    <h1>📝 DAFTAR TODO</h1>
-    
-    <div id="userInfo">Memuat informasi user...</div>
-    
-    <div id="debug">
-        <strong>Debug Info:</strong>
-        <div id="debugContent"></div>
-    </div>
-    
-    <h2>➕ Tambah Todo Baru</h2>
-    <form id="todoForm">
-        <input type="text" id="todoText" placeholder="Masukkan todo baru..." 
-               style="padding: 8px; width: 300px;" required>
-        <button type="submit" style="padding: 8px 16px;">Tambah</button>
-    </form>
-    
-    <h2>📋 Daftar Todo Anda:</h2>
-    <ul id="todoList">
-        <li>Memuat todos...</li>
-    </ul>
-    
-    <div id="message"></div>
-    
-    <p>
-        <button onclick="logout()" style="padding: 8px 16px;">Logout</button>
-        <a href="/" style="margin-left: 10px;">🏠 Home</a>
-    </p>
-    
-    <script>
-        // Debug
-        function debug(msg) {
-            const debugEl = document.getElementById('debugContent');
-            const time = new Date().toLocaleTimeString();
-            debugEl.innerHTML += `<div>[${time}] ${msg}</div>`;
-        }
-        
-        // Cek login
-        async function checkAuth() {
-            debug('Checking authentication...');
-            
-            try {
-                const response = await fetch('/api/me');
-                debug(`API Response status: ${response.status}`);
-                
-                const data = await response.json();
-                debug(`API Response: ${JSON.stringify(data)}`);
-                
-                if (data.success) {
-                    document.getElementById('userInfo').innerHTML = 
-                        `<strong>👋 Halo, ${data.user.username}!</strong>`;
-                    debug('✅ Authentication successful');
-                    return data.user;
-                } else {
-                    debug('❌ Not authenticated');
-                    window.location.href = '/login';
-                    return null;
-                }
-            } catch (error) {
-                debug(`❌ Auth error: ${error.message}`);
-                window.location.href = '/login';
-                return null;
-            }
-        }
-        
-        // Load todos
-        async function loadTodos() {
-            debug('Loading todos...');
-            
-            try {
-                const response = await fetch('/api/todos');
-                debug(`Todos API status: ${response.status}`);
-                
-                const data = await response.json();
-                debug(`Todos data: ${JSON.stringify(data)}`);
-                
-                const todoList = document.getElementById('todoList');
-                
-                if (data.success) {
-                    if (data.todos && data.todos.length > 0) {
-                        todoList.innerHTML = '';
-                        data.todos.forEach((todo, index) => {
-                            const li = document.createElement('li');
-                            li.innerHTML = `<strong>${index + 1}.</strong> ${todo.text}`;
-                            todoList.appendChild(li);
-                        });
-                        debug(`✅ Loaded ${data.todos.length} todos`);
-                    } else {
-                        todoList.innerHTML = '<li>📭 Belum ada todo. Tambahkan yang pertama!</li>';
-                        debug('ℹ️ No todos found');
-                    }
-                } else {
-                    todoList.innerHTML = `<li class="error">❌ Error: ${data.message}</li>`;
-                    debug(`❌ Error: ${data.message}`);
-                }
-            } catch (error) {
-                debug(`❌ Load error: ${error.message}`);
-                document.getElementById('todoList').innerHTML = 
-                    `<li class="error">❌ Error: ${error.message}</li>`;
-            }
-        }
-        
-        // Add todo
-        document.getElementById('todoForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const text = document.getElementById('todoText').value.trim();
-            const messageEl = document.getElementById('message');
-            
-            debug(`Attempting to add todo: "${text}"`);
-            
-            if (!text) {
-                messageEl.textContent = '❌ Todo tidak boleh kosong';
-                messageEl.className = 'error';
-                return;
-            }
-            
-            messageEl.textContent = '⏳ Menambahkan todo...';
-            messageEl.className = '';
-            
-            try {
-                const response = await fetch('/api/todos', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ text: text })
-                });
-                
-                debug(`Add todo API status: ${response.status}`);
-                
-                const data = await response.json();
-                debug(`Add todo response: ${JSON.stringify(data)}`);
-                
-                if (data.success) {
-                    messageEl.textContent = '✅ Todo berhasil ditambahkan!';
-                    messageEl.className = 'success';
-                    
-                    // Clear input
-                    document.getElementById('todoText').value = '';
-                    
-                    // Reload todos
-                    setTimeout(loadTodos, 500);
-                    
-                    debug('✅ Todo added successfully');
-                } else {
-                    messageEl.textContent = `❌ ${data.message}`;
-                    messageEl.className = 'error';
-                    debug(`❌ Failed: ${data.message}`);
-                }
-            } catch (error) {
-                messageEl.textContent = `❌ Error: ${error.message}`;
-                messageEl.className = 'error';
-                debug(`❌ Error: ${error.message}`);
-            }
-        });
-        
-        // Logout
-        async function logout() {
-            debug('Logging out...');
-            
-            try {
-                await fetch('/api/logout', { method: 'POST' });
-                debug('✅ Logout successful');
-                window.location.href = '/login';
-            } catch (error) {
-                debug(`❌ Logout error: ${error.message}`);
-                window.location.href = '/login';
-            }
-        }
-        
-        // Initialize
-        window.addEventListener('load', async () => {
-            debug('Page loaded');
-            const user = await checkAuth();
-            if (user) {
-                await loadTodos();
-                debug('✅ Page initialized');
-            }
-        });
-    </script>
+<h1>Todos</h1>
+
+<input id="todoText" placeholder="tambah todo">
+<button onclick="addTodo()">Tambah</button>
+
+<ul id="list"></ul>
+
+<button onclick="location.href='/dashboard'">Kembali</button>
+
+<script>
+async function loadTodos() {
+  const res = await fetch("/api/todos")
+  const data = await res.json()
+
+  if (!data.success) {
+    location.href = "/login"
+    return
+  }
+
+  list.innerHTML = ""
+  data.todos.forEach(t => {
+    const li = document.createElement("li")
+    li.innerText = t.text
+    list.appendChild(li)
+  })
+}
+
+async function addTodo() {
+  await fetch("/api/todos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: todoText.value })
+  })
+
+  todoText.value = ""
+  loadTodos()
+}
+
+loadTodos()
+</script>
 </body>
 </html>

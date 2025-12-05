@@ -1,111 +1,32 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Dashboard Todos</title>
-    <style>
-        body {
-            font-family: Arial;
-            padding: 20px;
-            max-width: 600px;
-            margin: auto;
-        }
-        input {
-            padding: 10px;
-            width: 70%;
-        }
-        button {
-            padding: 10px 20px;
-            background: green;
-            color: white;
-            border: none;
-        }
-        .todo-item {
-            padding: 10px;
-            background: #f2f2f2;
-            margin-top: 5px;
-            border-radius: 5px;
-        }
-    </style>
-</head>
 <body>
-    <h2>Dashboard Todo</h2>
+<h1>Dashboard</h1>
 
-    <p id="user"></p>
+<p id="info">Memuat...</p>
 
-    <div>
-        <input type="text" id="todoText" placeholder="Tulis todo baru...">
-        <button onclick="addTodo()">Tambah</button>
-    </div>
+<button onclick="location.href='/todos'">Ke Todos</button>
+<button onclick="logout()">Logout</button>
 
-    <h3>Daftar Todos</h3>
-    <div id="todoList">Loading...</div>
+<script>
+async function loadMe() {
+  const res = await fetch("/api/me")
+  const data = await res.json()
 
-    <br>
-    <a href="/api/login">Logout (hapus cookie manual)</a>
+  if (!data.success) {
+    location.href = "/login"
+    return
+  }
 
-    <script>
-        // Cek user login
-        async function loadUser() {
-            const res = await fetch('/api/me')
-            const data = await res.json()
+  document.getElementById("info").innerText =
+    "Halo, " + data.user.username
+}
+loadMe()
 
-            if (!data.success) {
-                window.location.href = '/login'
-                return
-            }
-
-            document.getElementById('user').innerHTML =
-                "Login sebagai: <b>" + data.user.username + "</b>"
-        }
-
-        // ========================
-        // 🔰 Ambil list todo
-        // ========================
-        async function loadTodos() {
-            const res = await fetch('/api/todos')
-            const data = await res.json()
-
-            const list = document.getElementById('todoList')
-            list.innerHTML = ""
-
-            if (!data.success) {
-                list.innerHTML = "Tidak bisa load data. Silakan login."
-                return
-            }
-
-            if (data.todos.length === 0) {
-                list.innerHTML = "<i>Belum ada todo</i>"
-                return
-            }
-
-            data.todos.forEach(todo => {
-                const div = document.createElement('div')
-                div.className = 'todo-item'
-                div.textContent = todo.text
-                list.appendChild(div)
-            })
-        }
-        //Tambah todo
-        async function addTodo() {
-            const text = document.getElementById('todoText').value
-
-            if (!text.trim()) return alert("Isi todo dulu!")
-            const res = await fetch('/api/todos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            })
-            const data = await res.json()
-            if (data.success) {
-                document.getElementById('todoText').value = ""
-                loadTodos()
-            } else {
-                alert(data.message)
-            }
-        }
-        // Load semua data saat halaman dibuka
-        loadUser()
-        loadTodos()
-    </script>
+async function logout() {
+  await fetch("/api/logout", { method: "POST" })
+  location.href = "/login"
+}
+</script>
 </body>
 </html>

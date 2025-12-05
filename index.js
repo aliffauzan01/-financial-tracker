@@ -1,12 +1,16 @@
 import 'dotenv/config'
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
-import { setCookie, getCookie } from 'hono/cookie'
+import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+
+import { db } from './db/index.js'
+import { users, todos } from './db/schema.js'
+import { eq } from 'drizzle-orm'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -14,25 +18,28 @@ const __dirname = path.dirname(__filename)
 const app = new Hono()
 const SECRET = process.env.JWT_SECRET || 'rahasia'
 
-// Database sementara di memory
-const users = []
-const todos = []
-
-//ROUTE HALAMAN HTML
+// ======================================================
+// LOAD HTML
+// ======================================================
 const loadHTML = async (folder, file) => {
   const filePath = path.join(__dirname, 'public', folder, file)
   return await fs.promises.readFile(filePath, 'utf-8')
 }
 
-app.get('/', c => c.html('<h1>Server Jalan</h1><a href="/login">Login</a>'))
+app.get('/', (c) => c.redirect('/login'))
 
-app.get('/login', async c => c.html(await loadHTML('login', 'index.html')))
-app.get('/register', async c => c.html(await loadHTML('register', 'index.html')))
+app.get('/login', async (c) => c.html(await loadHTML('login', 'index.html')))
+app.get('/register', async (c) => c.html(await loadHTML('register', 'index.html')))
+app.get('/dashboard', async (c) => c.html(await loadHTML('dashboard', 'index.html')))
+app.get('/todos', async (c) => c.html(await loadHTML('todos', 'index.html')))
 
-// MIDDLEWARE AUTENTIKASI
+// ======================================================
+// AUTH MIDDLEWARE
+// ======================================================
 function auth(c) {
   const token = getCookie(c, 'token')
   if (!token) return null
+
   try {
     return jwt.verify(token, SECRET)
   } catch {
@@ -40,75 +47,107 @@ function auth(c) {
   }
 }
 
-//API AUTH (REGISTER + LOGIN)
-app.post('/api/register', async c => {
+// ======================================================
+// REGISTER USER
+// ======================================================
+app.post('/api/register', async (c) => {
   const { username, password } = await c.req.json()
-  if (users.find(u => u.username === username))
-    return c.json({ success: false, message: 'Username sudah dipakai' })
 
-  const newUser = {
-    id: Date.now(),
-    username,
-    password: await bcrypt.hash(password, 10)
+  const existing = await db.select().from(users).where(eq(users.username, username))
+  if (existing.length > 0) {
+    return c.json({ success: false, message: 'Username sudah dipakai' })
   }
 
-  users.push(newUser)
-  return c.json({ success: true, message: 'Register berhasil' })
-})
+  const hashed = await bcrypt.hash(password, 10)
 
-app.post('/api/login', async c => {
-  const { username, password } = await c.req.json()
-  const user = users.find(u => u.username === username)
-
-  if (!user || !(await bcrypt.compare(password, user.password)))
-    return c.json({ success: false, message: 'Username atau password salah' })
-
-  // Buat token
-  const token = jwt.sign({ id: user.id, username }, SECRET, {
-    expiresIn: '1d'
+  await db.insert(users).values({
+    username,
+    password: hashed
   })
 
+  return c.json({ success: true, message: 'Registrasi berhasil' })
+})
+
+// ======================================================
+// LOGIN USER
+// ======================================================
+app.post('/api/login', async (c) => {
+  const { username, password } = await c.req.json()
+
+  const found = await db.select().from(users).where(eq(users.username, username))
+  if (found.length === 0)
+    return c.json({ success: false, message: 'Username atau password salah' })
+
+  const user = found[0]
+
+  const valid = await bcrypt.compare(password, user.password)
+  if (!valid) return c.json({ success: false, message: 'Username atau password salah' })
+
+  const token = jwt.sign(
+    { id: user.id, username: user.username },
+    SECRET,
+    { expiresIn: '1d' }
+  )
+
   setCookie(c, 'token', token, { httpOnly: true, path: '/' })
+
   return c.json({ success: true, message: 'Login berhasil' })
 })
 
-//TODOS API
-app.get('/api/todos', c => {
+// ======================================================
+// LOGOUT
+// ======================================================
+app.post('/api/logout', (c) => {
+  deleteCookie(c, 'token')
+  return c.json({ success: true, message: 'Logout berhasil' })
+})
+
+// ======================================================
+// GET USER LOGIN INFO
+// ======================================================
+app.get('/api/me', (c) => {
+  const user = auth(c)
+  if (!user) return c.json({ success: false, message: 'Belum login' })
+
+  return c.json({ success: true, user })
+})
+
+// ======================================================
+// TODOS — GET
+// ======================================================
+app.get('/api/todos', async (c) => {
   const user = auth(c)
   if (!user) return c.json({ success: false, message: 'Belum login' }, 401)
 
-  const userTodos = todos.filter(t => t.userId === user.id)
-  return c.json({ success: true, todos: userTodos })
+  const rows = await db.select().from(todos).where(eq(todos.userId, user.id))
+
+  return c.json({ success: true, todos: rows })
 })
 
-app.post('/api/todos', async c => {
+// ======================================================
+// TODOS — ADD
+// ======================================================
+app.post('/api/todos', async (c) => {
   const user = auth(c)
   if (!user) return c.json({ success: false, message: 'Belum login' }, 401)
 
   const { text } = await c.req.json()
-  if (!text) return c.json({ success: false, message: 'Isi todo' }, 400)
+  if (!text) return c.json({ success: false, message: 'Isi todo tidak boleh kosong' })
 
-  const todo = {
-    id: Date.now(),
-    userId: user.id,
-    text,
-    completed: false
-  }
+  const newTodo = await db.insert(todos)
+    .values({
+      text,
+      completed: false,
+      userId: user.id
+    })
+    .returning()
 
-  todos.push(todo)
-  return c.json({ success: true, todo })
-})
-//ME (cek token / user login)
-app.get('/api/me', c => {
-  const user = auth(c)
-  if (!user) return c.json({ success: false, message: 'Belum login' })
-  return c.json({ success: true, user })
+  return c.json({ success: true, todo: newTodo[0] })
 })
 
-//404
-app.notFound(c => c.text('404 - Tidak ditemukan'))
+// ======================================================
+app.notFound((c) => c.text('404 Not Found'))
 
-//UNTUK MENJALANKAN SERVER
 serve({ fetch: app.fetch, port: 3001 }, () => {
   console.log('Server jalan di http://localhost:3001')
 })
