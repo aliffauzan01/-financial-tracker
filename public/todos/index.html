@@ -1,45 +1,194 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todos</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    padding: 20px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+
+  #addBtn {
+    background: #4caf50;
+    color: white;
+    font-weight: bold;
+  }
+
+  ul {
+    padding: 0;
+    margin-top: 20px;
+  }
+
+  li {
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f7f7f7;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-small {
+    padding: 5px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+  }
+
+  .edit {
+    background: #ff9800;
+    color: white;
+  }
+
+  .delete {
+    background: #f44336;
+    color: white;
+  }
+
+  .back-btn {
+    width: 100%;
+    margin-top: 18px;
+    background: #2196f3;
+    color: white;
+    font-weight: bold;
+  }
+</style>
+</head>
+
 <body>
-<h1>Todos</h1>
 
-<input id="todoText" placeholder="tambah todo">
-<button onclick="addTodo()">Tambah</button>
+<div class="container">
 
-<ul id="list"></ul>
+  <h1>Todos</h1>
 
-<button onclick="location.href='/dashboard'">Kembali</button>
+  <div class="input-row">
+    <input id="todoText" placeholder="Tambah todo...">
+    <button id="addBtn" onclick="addTodo()">Tambah</button>
+  </div>
+
+  <ul id="list"></ul>
+
+  <button class="back-btn" onclick="location.href='/dashboard'">Kembali</button>
+
+</div>
 
 <script>
 async function loadTodos() {
   const res = await fetch("/api/todos")
   const data = await res.json()
 
-  if (!data.success) {
-    location.href = "/login"
-    return
-  }
+  if (!data.success) return location.href = "/login"
 
   list.innerHTML = ""
+
   data.todos.forEach(t => {
     const li = document.createElement("li")
-    li.innerText = t.text
+
+    const text = document.createElement("span")
+    text.innerText = t.text
+
+    const actions = document.createElement("div")
+    actions.className = "actions"
+
+    const editBtn = document.createElement("button")
+    editBtn.className = "btn-small edit"
+    editBtn.innerText = "Edit"
+    editBtn.onclick = () => editTodo(t.id, t.text)
+
+    const delBtn = document.createElement("button")
+    delBtn.className = "btn-small delete"
+    delBtn.innerText = "Hapus"
+    delBtn.onclick = () => deleteTodo(t.id)
+
+    actions.appendChild(editBtn)
+    actions.appendChild(delBtn)
+
+    li.appendChild(text)
+    li.appendChild(actions)
     list.appendChild(li)
   })
 }
 
 async function addTodo() {
+  const text = todoText.value.trim()
+  if (!text) return alert("Isi dulu!")
+
   await fetch("/api/todos", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: todoText.value })
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ text })
   })
 
   todoText.value = ""
   loadTodos()
 }
 
+async function deleteTodo(id) {
+  await fetch("/api/todos/" + id, { method: "DELETE" })
+  loadTodos()
+}
+
+async function editTodo(id, oldText) {
+  const newText = prompt("Edit todo:", oldText)
+  if (!newText) return
+
+  await fetch("/api/todos/" + id, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ text: newText })
+  })
+
+  loadTodos()
+}
+
 loadTodos()
 </script>
+
 </body>
 </html>
