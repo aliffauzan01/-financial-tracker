@@ -31,9 +31,9 @@ app.get('/login', async (c) => c.html(await loadHTML('login', 'index.html')))
 app.get('/register', async (c) => c.html(await loadHTML('register', 'index.html')))
 app.get('/dashboard', async (c) => c.html(await loadHTML('dashboard', 'index.html')))
 
-// ======================================================
+
 // AUTH HELPERS
-// ======================================================
+
 function auth(c) {
   const token = getCookie(c, 'token')
   if (!token) return null
@@ -45,9 +45,9 @@ function auth(c) {
   }
 }
 
-// ======================================================
-// REGISTER
-// ======================================================
+
+// Api REGISTER (jika belum punya akun)
+
 app.post('/api/register', async (c) => {
   const { username, password } = await c.req.json()
 
@@ -66,9 +66,9 @@ app.post('/api/register', async (c) => {
   return c.json({ success: true, message: 'Registrasi berhasil' })
 })
 
-// ======================================================
-// LOGIN
-// ======================================================
+
+// LOGIN (ketika sudah mempunyai akun)
+
 app.post('/api/login', async (c) => {
   const { username, password } = await c.req.json()
 
@@ -92,35 +92,35 @@ app.post('/api/login', async (c) => {
   return c.json({ success: true, message: 'Login berhasil' })
 })
 
-// ======================================================
-// LOGOUT
-// ======================================================
+
+// LOGOUT (keluar)
+
 app.post('/api/logout', (c) => {
   deleteCookie(c, 'token')
   return c.json({ success: true, message: 'Logout berhasil' })
 })
 
-// ======================================================
-// WHO AM I
-// ======================================================
+
+// Api Me (untuk memastikan apakah sudah login atau belum)
+
 app.get('/api/me', (c) => {
   const user = auth(c)
   if (!user) return c.json({ success: false, message: 'Belum login' })
   return c.json({ success: true, user })
 })
 
-// ======================================================
+
 // MIDDLEWARE: inject user
-// ======================================================
+
 app.use("*", async (c, next) => {
   const user = auth(c)
   if (user) c.set("user", user)
   await next()
 })
 
-// ======================================================
-// GET TRANSACTIONS
-// ======================================================
+
+// GET Api TRANSACTIONS
+
 app.get("/api/transactions", async (c) => {
   const user = c.get("user")
   if (!user) return c.json({ success: false, message: "Belum login" })
@@ -131,9 +131,9 @@ app.get("/api/transactions", async (c) => {
   return c.json({ success: true, transactions: rows })
 })
 
-// ======================================================
-// ADD TRANSACTION
-// ======================================================
+
+// ADD TRANSACTION 
+
 app.post("/api/transaction/add", async (c) => {
   try {
     const user = c.get("user")
@@ -141,19 +141,19 @@ app.post("/api/transaction/add", async (c) => {
 
     const body = await c.req.json()
 
-    // === FIX NOMINAL ===
+    
     let nominal = body.amount
     if (!nominal) {
       return c.json({ success: false, message: "Nominal wajib diisi" })
     }
 
-    // Buang titik 100.000.000 → 100000000
+    // Buang titik / jangan menggunakan = 100000000
     nominal = nominal.toString().replace(/\./g, "")
 
-    // === FIX DATE ===
+    
     let tanggal = body.date
     if (!tanggal) tanggal = new Date().toISOString()  // default hari ini
-
+    //insert
     await db.insert(transactions).values({
       userId: user.id,
       nominal: nominal,
@@ -171,9 +171,9 @@ app.post("/api/transaction/add", async (c) => {
 })
 
 
-// ======================================================
+
 app.notFound((c) => c.text('404 Not Found'))
 
 serve({ fetch: app.fetch, port: 3001 }, () => {
-  console.log('Server jalan di http://localhost:3001')
+  console.log('🚀 Server jalan di http://localhost:3001')
 })

@@ -70,12 +70,6 @@
     background: #0067e0;
   }
 
-  p {
-    margin-top: 15px;
-    color: #555;
-    font-size: 14px;
-  }
-
   a {
     color: #2d89ff;
     text-decoration: none;
@@ -84,39 +78,42 @@
   a:hover {
     text-decoration: underline;
   }
+
+  /* Notifikasi */
+  #notif {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background:#0067e0;
+    color: white;
+    padding: 14px 22px;
+    border-radius: 8px;
+    font-size: 16px;
+    display: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 999;
+  }
 </style>
 </head>
-<!-- css untuk Notifikasi -->
-<div id="notif" style="
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background:#0067e0;
-  color: white;
-  padding: 14px 22px;
-  border-radius: 8px;
-  font-size: 16px;
-  display: none;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  z-index: 999;
-">
-  Login berhasil!
-</div>
 
 <body>
+
+<!-- NOTIFIKASI -->
+<div id="notif">Notifikasi</div>
+
 <div class="login-box">
 
   <h1>Login</h1>
 
   <div class="input-group">
     <label for="username">Username</label>
-    <input id="username" placeholder="Masukkan username...">
+    <input id="username" autocomplete="off" placeholder="Masukkan username...">
   </div>
 
   <div class="input-group">
     <label for="password">Password</label>
-    <input id="password" type="password" placeholder="Masukkan password...">
+    <input id="password" type="password" autocomplete="new-password" placeholder="Masukkan password...">
   </div>
 
   <button onclick="login()">Login</button>
@@ -126,36 +123,56 @@
 </div>
 
 <script>
+// Kosongkan input saat halaman dibuka
+window.onload = () => {
+  username.value = "";
+  password.value = "";
+};
+
 function showNotif(text, success = true) {
   const box = document.getElementById("notif");
   box.innerText = text;
   box.style.background = success ? "#0067e0" : "#e74c3c";
   box.style.display = "block";
 
-  setTimeout(() => {
-    box.style.display = "none";
-  }, 2000);
+  setTimeout(() => box.style.display = "none", 2000);
 }
 
 async function login() {
+  const user = username.value.trim();
+  const pass = password.value.trim();
+
+  // VALIDASI LENGKAP
+  if (!user && !pass) {
+    showNotif("Isi username & password terlebih dahulu!", false);
+    return;
+  }
+
+  if (!user) {
+    showNotif("Isi username terlebih dahulu!", false);
+    return;
+  }
+
+  if (!pass) {
+    showNotif("Isi password terlebih dahulu!", false);
+    return;
+  }
+
+  // Jika valid → kirim ke server
   const res = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: username.value,
-      password: password.value
-    })
-  })
+    body: JSON.stringify({ username: user, password: pass })
+  });
 
-  const data = await res.json()
+  const data = await res.json();
 
-  // tampilkan notifikasi rapi
-  showNotif(data.message, data.success)
+  showNotif(data.message, data.success);
 
   if (data.success) {
     setTimeout(() => {
-      location.href = "/dashboard"
-    }, 1200)
+      location.href = "/dashboard";
+    }, 1200);
   }
 }
 </script>
