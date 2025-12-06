@@ -9,7 +9,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { db } from './db/index.js'
-import { users, todos } from './db/schema.js'
+import { users, transactions } from './db/schema.js'
 import { eq } from 'drizzle-orm'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -27,14 +27,12 @@ const loadHTML = async (folder, file) => {
 }
 
 app.get('/', (c) => c.redirect('/login'))
-
 app.get('/login', async (c) => c.html(await loadHTML('login', 'index.html')))
 app.get('/register', async (c) => c.html(await loadHTML('register', 'index.html')))
 app.get('/dashboard', async (c) => c.html(await loadHTML('dashboard', 'index.html')))
-app.get('/todos', async (c) => c.html(await loadHTML('todos', 'index.html')))
 
 // ======================================================
-// AUTH MIDDLEWARE
+// AUTH HELPERS
 // ======================================================
 function auth(c) {
   const token = getCookie(c, 'token')
@@ -48,7 +46,7 @@ function auth(c) {
 }
 
 // ======================================================
-// REGISTER USER
+// REGISTER
 // ======================================================
 app.post('/api/register', async (c) => {
   const { username, password } = await c.req.json()
@@ -69,7 +67,7 @@ app.post('/api/register', async (c) => {
 })
 
 // ======================================================
-// LOGIN USER
+// LOGIN
 // ======================================================
 app.post('/api/login', async (c) => {
   const { username, password } = await c.req.json()
@@ -103,47 +101,75 @@ app.post('/api/logout', (c) => {
 })
 
 // ======================================================
-// GET USER LOGIN INFO
+// WHO AM I
 // ======================================================
 app.get('/api/me', (c) => {
   const user = auth(c)
   if (!user) return c.json({ success: false, message: 'Belum login' })
-
   return c.json({ success: true, user })
 })
 
 // ======================================================
-// TODOS — GET
+// MIDDLEWARE: inject user
 // ======================================================
-app.get('/api/todos', async (c) => {
+app.use("*", async (c, next) => {
   const user = auth(c)
-  if (!user) return c.json({ success: false, message: 'Belum login' }, 401)
-
-  const rows = await db.select().from(todos).where(eq(todos.userId, user.id))
-
-  return c.json({ success: true, todos: rows })
+  if (user) c.set("user", user)
+  await next()
 })
 
 // ======================================================
-// TODOS — ADD
+// GET TRANSACTIONS
 // ======================================================
-app.post('/api/todos', async (c) => {
-  const user = auth(c)
-  if (!user) return c.json({ success: false, message: 'Belum login' }, 401)
+app.get("/api/transactions", async (c) => {
+  const user = c.get("user")
+  if (!user) return c.json({ success: false, message: "Belum login" })
 
-  const { text } = await c.req.json()
-  if (!text) return c.json({ success: false, message: 'Isi todo tidak boleh kosong' })
+  const rows = await db.select().from(transactions)
+    .where(eq(transactions.userId, user.id))
 
-  const newTodo = await db.insert(todos)
-    .values({
-      text,
-      completed: false,
-      userId: user.id
+  return c.json({ success: true, transactions: rows })
+})
+
+// ======================================================
+// ADD TRANSACTION
+// ======================================================
+app.post("/api/transaction/add", async (c) => {
+  try {
+    const user = c.get("user")
+    if (!user) return c.json({ success: false, message: "Belum login" })
+
+    const body = await c.req.json()
+
+    // === FIX NOMINAL ===
+    let nominal = body.amount
+    if (!nominal) {
+      return c.json({ success: false, message: "Nominal wajib diisi" })
+    }
+
+    // Buang titik 100.000.000 → 100000000
+    nominal = nominal.toString().replace(/\./g, "")
+
+    // === FIX DATE ===
+    let tanggal = body.date
+    if (!tanggal) tanggal = new Date().toISOString()  // default hari ini
+
+    await db.insert(transactions).values({
+      userId: user.id,
+      nominal: nominal,
+      transactionDate: new Date(tanggal),
+      status: body.status,
+      description: body.description || ""
     })
-    .returning()
 
-  return c.json({ success: true, todo: newTodo[0] })
+    return c.json({ success: true, message: "Transaksi berhasil ditambahkan" })
+
+  } catch (err) {
+    console.log(err)
+    return c.json({ success: false, message: "Gagal menambahkan transaksi" })
+  }
 })
+
 
 // ======================================================
 app.notFound((c) => c.text('404 Not Found'))
