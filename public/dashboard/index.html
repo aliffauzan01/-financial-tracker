@@ -1,92 +1,92 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <title>Dashboard</title>
-  </head>
+</head>
 
-  <body>
+<body>
     <!-- NOTIFIKASI -->
     <div id="notifBox"></div>
 
     <!-- HEADER -->
     <div class="header">
-      <h1 id="username">Halo, ...</h1>
-      <button onclick="logout()">Logout</button>
+    <h1 id="username">Halo, ...</h1>
+    <button onclick="logout()">Logout</button>
     </div>
 
     <!-- RINGKASAN -->
     <div class="card">
-      <div class="section-title">
+    <div class="section-title">
         Ringkasan Bulan Ini (<span id="month"></span>)
-      </div>
+    </div>
 
-      <p>Pemasukan: <b id="income">Rp 0</b></p>
-      <p>Pengeluaran: <b id="outcome">Rp 0</b></p>
-      <p>Sisa Saldo: <b id="balance">Rp 0</b></p>
+    <p>Pemasukan: <b id="income">Rp 0</b></p>
+    <p>Pengeluaran: <b id="outcome">Rp 0</b></p>
+    <p>Sisa Saldo: <b id="balance">Rp 0</b></p>
     </div>
 
     <!-- INPUT TRANSAKSI -->
     <div class="card">
-      <div class="section-title">Input Transaksi Baru</div>
+    <div class="section-title">Input Transaksi Baru</div>
 
-      <div>
+    <div>
         <label>Nominal:</label><br />
         <input type="number" id="amount" placeholder="Contoh: 500000" />
-      </div>
+    </div>
 
-      <div>
+    <div>
         <label>Tanggal:</label><br />
         <input type="date" id="date" />
-      </div>
+    </div>
 
-      <div>
+    <div>
         <label>Status:</label><br />
         <select id="status">
-          <option value="INCOME">Pemasukan</option>
-          <option value="OUTCOME">Pengeluaran</option>
+        <option value="INCOME">Pemasukan</option>
+        <option value="OUTCOME">Pengeluaran</option>
         </select>
-      </div>
+    </div>
 
-      <div>
+    <div>
         <label>Keterangan (Opsional):</label><br />
         <input
-          type="text"
-          id="description"
-          placeholder="Contoh: Gaji bulan lalu"
+        type="text"
+        id="description"
+        placeholder="Contoh: Gaji bulan lalu"
         />
-      </div>
+    </div>
 
-      <button onclick="tambahTransaksi()">Tambah Transaksi</button>
+    <button onclick="tambahTransaksi()">Tambah Transaksi</button>
     </div>
 
     <!-- Riwayat Transaksi -->
     <div class="card">
-      <div class="section-title">Riwayat Transaksi</div>
-      <ul id="riwayat"></ul>
+    <div class="section-title">Riwayat Transaksi</div>
+    <ul id="riwayat"></ul>
     </div>
 
     <!-- Fungsing untuk Logout -->
     <script>
-      async function logout() {
+    async function logout() {
         await fetch("/api/logout", { method: "POST" });
         location.href = "/login";
-      }
+    }
 
       // Fungsi Load User (mengecek apakah sudah login atau belum)
-      async function loadUser() {
+    async function loadUser() {
         const res = await fetch("/api/me");
         const data = await res.json();
 
         if (!data.success) return (location.href = "/login");
 
         document.getElementById("username").innerText =
-          "Halo, " + data.user.username;
-      }
-      loadUser();
+        "Halo, " + data.user.username;
+    }
+    loadUser();
 
       // Fungsi Load Dashboard(mengambil semua transaksi user dari server )
-      async function loadDashboard() {
+    async function loadDashboard() {
         const res = await fetch("/api/transactions");
         const data = await res.json();
 
@@ -94,47 +94,47 @@
 
         // menentukan bulan sekarang
         const monthString = new Date().toLocaleString("id-ID", {
-          month: "long",
-          year: "numeric",
+        month: "long",
+        year: "numeric",
         });
         document.getElementById("month").innerText = monthString;
 
         let income = 0,
-          outcome = 0;
+        outcome = 0;
         const riw = document.getElementById("riwayat");
         riw.innerHTML = "";
 
         data.transactions.forEach((t) => {
-          const nominal = Number(t.nominal);
-          const tanggal = new Date(t.transactionDate).toLocaleDateString(
+        const nominal = Number(t.nominal);
+        const tanggal = new Date(t.transactionDate).toLocaleDateString(
             "id-ID"
-          );
+        );
 
-          if (t.status === "INCOME") income += nominal;
-          else outcome += nominal;
+        if (t.status === "INCOME") income += nominal;
+        else outcome += nominal;
 
           // menampilkan riwayat transaksi
-          const li = document.createElement("li");
-          li.innerHTML = `<b>[${
+        const li = document.createElement("li");
+        li.innerHTML = `<b>[${
             t.status
-          }]</b> ${tanggal} : Rp ${nominal.toLocaleString()} <br> ${
+        }]</b> ${tanggal} : Rp ${nominal.toLocaleString()} <br> ${
             t.description
-          }`;
-          riw.appendChild(li);
+        }`;
+        riw.appendChild(li);
         });
 
         document.getElementById("income").innerText =
-          "Rp " + income.toLocaleString();
+        "Rp " + income.toLocaleString();
         document.getElementById("outcome").innerText =
-          "Rp " + outcome.toLocaleString();
+        "Rp " + outcome.toLocaleString();
         document.getElementById("balance").innerText =
-          "Rp " + (income - outcome).toLocaleString();
-      }
-      loadDashboard();
+        "Rp " + (income - outcome).toLocaleString();
+    }
+    loadDashboard();
 
       // Fungsi tambah Transaksi
       // mengambil semua input dari form
-      async function tambahTransaksi() {
+    async function tambahTransaksi() {
         const amountInput = document.getElementById("amount");
         const dateInput = document.getElementById("date");
         const statusInput = document.getElementById("status");
@@ -142,42 +142,42 @@
 
         //VALIDASI BARU SESUAI INPUT YANG KOSONG
         if (!amountInput.value && !dateInput.value) {
-          showNotif("Nominal dan tanggal wajib diisi!", "error");
-          return;
+        showNotif("Nominal dan tanggal wajib diisi!", "error");
+        return;
         }
 
         if (!amountInput.value) {
-          showNotif("Nominal belum diisi!", "error");
-          return;
+        showNotif("Nominal belum diisi!", "error");
+        return;
         }
 
         if (!dateInput.value) {
-          showNotif("Tanggal belum diisi!", "error");
-          return;
+        showNotif("Tanggal belum diisi!", "error");
+        return;
         }
 
         const cleanAmount = amountInput.value.replace(/\./g, "");
 
         //mengirim data ke server
         const res = await fetch("/api/transaction/add", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
             amount: cleanAmount,
             date: dateInput.value,
             status: statusInput.value,
             description: descInput.value,
-          }),
+        }),
         });
 
         const data = await res.json();
         showNotif(data.message, data.success ? "success" : "error");
 
         loadDashboard();
-      }
+    }
 
       // Fungsi menmpilkan Notifikasi
-      function showNotif(message, type = "success") {
+    function showNotif(message, type = "success") {
         const box = document.getElementById("notifBox");
 
         const div = document.createElement("div");
@@ -194,13 +194,13 @@
         box.appendChild(div);
 
         setTimeout(() => {
-          div.style.opacity = "0";
+        div.style.opacity = "0";
         }, 2000);
 
         setTimeout(() => {
-          box.removeChild(div);
+        box.removeChild(div);
         }, 2600);
-      }
+    }
     </script>
-  </body>
+</body>
 </html>
