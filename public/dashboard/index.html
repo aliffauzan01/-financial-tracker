@@ -28,7 +28,7 @@
 
         <div>
             <label>Nominal:</label><br />
-            <!-- ⚠️ WAJIB TANPA TITIK -->
+            <!-- WAJIB TANPA TITIK -->
             <input type="number" id="amount" placeholder="Contoh: 300000" />
         </div>
 
@@ -59,7 +59,7 @@
     </div>
 
 <script>
-/* ================= AUTH ================= */
+//AUTH
 async function logout() {
     await fetch("/api/logout", { method: "POST", credentials: "include" });
     location.href = "/login";
@@ -74,7 +74,7 @@ async function loadUser() {
 }
 loadUser();
 
-/* ================= DASHBOARD ================= */
+//Dashboard
 async function loadDashboard() {
     const res = await fetch("/api/transactions", { credentials: "include" });
     const data = await res.json();
@@ -110,7 +110,7 @@ async function loadDashboard() {
 }
 loadDashboard();
 
-/* ================= TAMBAH KE UI ================= */
+//Tambah ke UI
 function tambahKeRiwayatLangsung({ amount, date, status, description }) {
     const riw = document.getElementById("riwayat");
     const nominal = Number(amount);
@@ -135,7 +135,7 @@ function tambahKeRiwayatLangsung({ amount, date, status, description }) {
         "Rp " + (income - outcome).toLocaleString("id-ID");
 }
 
-/* ================= TAMBAH TRANSAKSI (FIX TOTAL) ================= */
+//Tambah Transaksi
 async function tambahTransaksi() {
     const amountEl = document.getElementById("amount");
     const dateEl = document.getElementById("date");
@@ -173,7 +173,7 @@ async function tambahTransaksi() {
         }),
     });
 
-    // 🔥 AMAN: JANGAN LANGSUNG res.json()
+
     let data;
     const text = await res.text();
 
@@ -205,7 +205,7 @@ async function tambahTransaksi() {
     descEl.value = "";
 }
 
-/* ================= NOTIF ================= */
+//NOTIFIKASI
 function showNotif(message, type = "success") {
     const box = document.getElementById("notifBox");
     const div = document.createElement("div");
